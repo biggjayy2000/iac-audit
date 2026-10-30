@@ -1,0 +1,109 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deliberately weak stack, used to prove the CloudFormation path hits the same rules.",
+  "Resources": {
+    "ReportsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "company-reports",
+        "AccessControl": "PublicRead"
+      }
+    },
+    "ReportsBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": { "Ref": "ReportsBucket" },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "AllowAnyone",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "s3:GetObject",
+              "Resource": "arn:aws:s3:::company-reports/*"
+            }
+          ]
+        }
+      }
+    },
+    "BastionGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Remote access",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "DataVolume": {
+      "Type": "AWS::EC2::Volume",
+      "Properties": {
+        "AvailabilityZone": "us-east-1a",
+        "Size": 100,
+        "Encrypted": false
+      }
+    },
+    "OrdersDatabase": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "Engine": "postgres",
+        "DBInstanceClass": "db.t3.micro",
+        "AllocatedStorage": "20",
+        "MasterUsername": "app",
+        "MasterUserPassword": "CorrectHorseBatteryStaple",
+        "PubliclyAccessible": true,
+        "StorageEncrypted": false
+      }
+    },
+    "ApplicationPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "application-policy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "*",
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
+    "CiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    },
+    "WebInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-0abcdef1234567890",
+        "InstanceType": "t3.micro",
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": true,
+            "DeviceIndex": "0"
+          }
+        ]
+      }
+    }
+  }
+}
